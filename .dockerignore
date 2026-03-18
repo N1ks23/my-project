@@ -1,0 +1,13 @@
+.env
+.env.*
+node_modules
+vendor
+storage
+bootstrap/cache
+.git
+.gitignore
+.github
+tests
+README.md
+npm-debug.log
+vite.config.js
