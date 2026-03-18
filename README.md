@@ -2,6 +2,9 @@
 
 A clean, modern portfolio rebuilt on Laravel 11 with a database-driven content layer and a production-ready deployment path.
 
+## Live URL
+`https://nikk-dev.vercel.app`
+
 ## Highlights
 - Laravel 11 backend
 - Database-driven portfolio content (JSON stored in `portfolio_contents`)
