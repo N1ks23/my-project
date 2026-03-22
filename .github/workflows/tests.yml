@@ -1,8 +1,10 @@
 name: Tests
 
 on:
+  workflow_dispatch:
   push:
     branches:
+      - main
       - master
       - '*.x'
   pull_request:
@@ -44,4 +46,4 @@ jobs:
         run: php artisan key:generate
 
       - name: Execute tests
-        run: vendor/bin/phpunit
+        run: php artisan test
