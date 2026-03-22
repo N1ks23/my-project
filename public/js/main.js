@@ -55,12 +55,11 @@ const fallbackData = {
     "When not coding, I stay active and productive through learning, fitness, and community activities. These help me maintain balance, creativity, and focus while improving as a developer.",
   projects: [
     { name: 'HoneyBeeIn', description: 'HoneyBeeIn is a web platform.', url: '#' },
-    { name: 'ProxiFan App', description: 'UNO R4 WiFi–based fan controller project and its companion web/mobile UI.', url: '#' },
+    { name: 'ProxiFan App', description: 'UNO R4 WiFi-based fan controller project and its companion web/mobile UI.', url: '#' },
     { name: 'SackTracker App', description: 'SackTracker is a feed tracking app.', url: '#' },
     { name: 'Farm Logs App', description: 'Farm logs are records of farm activities and outcomes.', url: '#' }
   ],
   gallery: [
-    'assets/image1.jpg',
     'assets/image2.jpg',
     'assets/image3.jpg',
     'assets/image4.jpg',
@@ -210,9 +209,15 @@ function renderProjects() {
 }
 
 function renderGallery() {
+  const excludedGalleryImages = new Set(['assets/image1.jpg']);
+  const normalizeGallerySrc = (src) => String(src || '').trim().replace(/^https?:\/\/[^/]+/i, '').replace(/^\/+/, '');
+  const galleryItems = Array.isArray(data.gallery)
+    ? data.gallery.filter((src) => !excludedGalleryImages.has(normalizeGallerySrc(src)))
+    : [];
+
   html(
     'gallery',
-    data.gallery
+    galleryItems
       .map(
         (src, index) => `<img src="${src}" loading="lazy" decoding="async" alt="Gallery image ${index + 1}" onerror="this.onerror=null;this.src='https://placehold.co/420x420/e4e7ec/1f2937?text=Photo';">`
       )
@@ -562,6 +567,291 @@ function setupBackToTop() {
 
 
 
+function setupChatWidget() {
+  const launcher = document.getElementById('chatLauncher');
+  const widget = document.getElementById('chatWidget');
+  const closeButton = document.getElementById('chatClose');
+  const form = document.getElementById('chatForm');
+  const input = document.getElementById('chatMessageInput');
+  const messages = document.getElementById('chatMessages');
+
+  if (!launcher || !widget || !closeButton || !form || !input || !messages) {
+    return;
+  }
+
+  const profile = data.profile || {};
+
+  const open = () => {
+    widget.classList.add('open');
+    widget.setAttribute('aria-hidden', 'false');
+    launcher.setAttribute('aria-expanded', 'true');
+    window.setTimeout(() => input.focus(), 120);
+  };
+
+  const close = () => {
+    widget.classList.remove('open');
+    widget.setAttribute('aria-hidden', 'true');
+    launcher.setAttribute('aria-expanded', 'false');
+  };
+
+  const addMessage = (textContent, role = 'assistant') => {
+    const bubble = document.createElement('div');
+    bubble.className = `chat-bubble ${role}`;
+    bubble.textContent = textContent;
+    messages.appendChild(bubble);
+    messages.scrollTop = messages.scrollHeight;
+  };
+
+  const topSkills = Array.isArray(data.stack)
+    ? data.stack.flatMap((group) => group.items || []).slice(0, 6)
+    : [];
+
+  const topProjects = Array.isArray(data.projects)
+    ? data.projects.map((project) => project.name).slice(0, 4)
+    : [];
+
+  const linksByLabel = Array.isArray(data.links)
+    ? data.links.reduce((map, item) => {
+        if (item && item.label && item.url) {
+          map[item.label.toLowerCase()] = item.url;
+        }
+        return map;
+      }, {})
+    : {};
+  let lastIntent = '';
+
+  const getProfileHandle = (url, domain) => {
+    if (!url) {
+      return '';
+    }
+
+    const clean = String(url).trim();
+    const noProtocol = clean.replace(/^https?:\/\//i, '');
+    const noDomain = noProtocol
+      .replace(/^www\./i, '')
+      .replace(new RegExp(`^${domain.replace('.', '\\.')}\\/`, 'i'), '');
+    const parts = noDomain.split(/[/?#]/).filter(Boolean);
+    if (!parts.length) {
+      return '';
+    }
+
+    if (domain.toLowerCase() === 'linkedin.com' && parts[0].toLowerCase() === 'in' && parts[1]) {
+      return parts[1];
+    }
+
+    return parts[0];
+  };
+
+  const getReply = (raw) => {
+    const text = raw.toLowerCase();
+    const normalized = text.replace(/[^\w\s]/g, ' ').replace(/\s+/g, ' ').trim();
+    const asksAbout = /\babout\b|\byourself\b|\bwho\b/.test(normalized);
+    const asksSkills = /\bskill\b|\bstack\b|\btech\b/.test(normalized);
+    const asksProjects = /\bproject\b|\bportfolio work\b/.test(normalized);
+    const asksExperience = /\bexperience\b|\bwork\b/.test(normalized);
+    const asksResume = /\bresume\b|\bcv\b/.test(normalized);
+    const asksContact = /\bcontact\b|\bemail\b/.test(normalized);
+    const asksLocation = /\blocation\b|\bwhere\b/.test(normalized);
+    const asksFacebook = /\bfacebook\b|\bfb\b/.test(normalized);
+    const asksLinkedIn = /\blinkedin\b/.test(normalized);
+    const asksGithub = /\bgithub\b/.test(normalized);
+    const asksInstagram = /\binstagram\b|\binsta\b|\big\b/.test(normalized);
+    const asksName = /\bname\b|\busername\b|\bhandle\b|\baccount\b/.test(normalized);
+    const asksLink = /\blink\b|\burl\b|\bprofile\b/.test(normalized);
+    const asksFollowUp = /\bhow about\b|\bwhat about\b|\bi mean\b|\band\b/.test(normalized);
+    const asksSocialGroup = /\bsocial\b|\blinks\b/.test(normalized) || asksLinkedIn || asksGithub || asksInstagram || asksFacebook;
+    const facebookUrl = linksByLabel.facebook || '';
+    const instagramUrl = linksByLabel.instagram || '';
+    const linkedInUrl = linksByLabel.linkedin || '';
+    const githubUrl = linksByLabel.github || '';
+
+    if (/\b(hi|hello|hey)\b/.test(text)) {
+      return `Hello! I'm Nikko AI. Ask me about ${profile.name || 'this portfolio'} and I can help you quickly.`;
+    }
+
+    if (asksFacebook) {
+      const facebookHandle = getProfileHandle(facebookUrl, 'facebook.com');
+      lastIntent = 'facebook';
+
+      if (!facebookUrl) {
+        return 'I cannot find a Facebook link yet. You can add it in the Social Links section.';
+      }
+
+      if (asksName && asksLink) {
+        return `Facebook name: ${facebookHandle || 'Not available'}\nFacebook: ${facebookUrl}`;
+      }
+
+      if (asksName) {
+        return facebookHandle
+          ? `Facebook name: ${facebookHandle}`
+          : `Facebook: ${facebookUrl}`;
+      }
+
+      return `Facebook: ${facebookUrl}`;
+    }
+
+    if (asksLinkedIn) {
+      const linkedInHandle = getProfileHandle(linkedInUrl, 'linkedin.com');
+      lastIntent = 'linkedin';
+      if (!linkedInUrl) {
+        return 'LinkedIn link is not available right now.';
+      }
+
+      if (asksName) {
+        return linkedInHandle
+          ? `LinkedIn username: ${linkedInHandle}`
+          : `LinkedIn: ${linkedInUrl}`;
+      }
+
+      return linkedInUrl
+        ? `LinkedIn: ${linkedInUrl}`
+        : 'LinkedIn link is not available right now.';
+    }
+
+    if (asksGithub) {
+      const githubHandle = getProfileHandle(githubUrl, 'github.com');
+      lastIntent = 'github';
+      if (!githubUrl) {
+        return 'GitHub link is not available right now.';
+      }
+
+      if (asksName) {
+        return githubHandle
+          ? `GitHub username: ${githubHandle}`
+          : `GitHub: ${githubUrl}`;
+      }
+
+      return githubUrl
+        ? `GitHub: ${githubUrl}`
+        : 'GitHub link is not available right now.';
+    }
+
+    if (asksInstagram) {
+      const instagramHandle = getProfileHandle(instagramUrl, 'instagram.com');
+      lastIntent = 'instagram';
+      if (!instagramUrl) {
+        return 'Instagram link is not available right now.';
+      }
+
+      if (asksName && asksLink) {
+        return `Instagram username: ${instagramHandle || 'Not available'}\nInstagram: ${instagramUrl}`;
+      }
+
+      if (asksName) {
+        return instagramHandle
+          ? `Instagram username: ${instagramHandle}`
+          : `Instagram: ${instagramUrl}`;
+      }
+
+      return instagramUrl
+        ? `Instagram: ${instagramUrl}`
+        : 'Instagram link is not available right now.';
+    }
+
+    if (asksSocialGroup) {
+      lastIntent = 'social';
+      const socialLines = Object.entries(linksByLabel).map(([label, url]) => {
+        const prettyLabel = label.charAt(0).toUpperCase() + label.slice(1);
+        return `${prettyLabel}: ${url}`;
+      });
+      return socialLines.length
+        ? socialLines.join('\n')
+        : 'Social links are listed in the Social Links section.';
+    }
+
+    if (asksFollowUp && lastIntent === 'instagram' && instagramUrl) {
+      return `Instagram: ${instagramUrl}`;
+    }
+
+    if (asksFollowUp && lastIntent === 'facebook' && facebookUrl) {
+      return `Facebook: ${facebookUrl}`;
+    }
+
+    if (asksAbout) {
+      lastIntent = 'about';
+      return Array.isArray(data.about) && data.about.length
+        ? data.about[0]
+        : `I can share details about ${profile.name || 'this profile'}, including experience, stack, and projects.`;
+    }
+
+    if (asksSkills) {
+      lastIntent = 'skills';
+      return topSkills.length
+        ? `Top skills: ${topSkills.join(', ')}.`
+        : 'The stack section includes frontend, backend, and dev tools.';
+    }
+
+    if (asksProjects) {
+      lastIntent = 'projects';
+      return topProjects.length
+        ? `Recent projects include: ${topProjects.join(', ')}.`
+        : 'There are recent project cards in the portfolio section.';
+    }
+
+    if (asksExperience) {
+      lastIntent = 'experience';
+      const latest = Array.isArray(data.experience) && data.experience.length ? data.experience[0] : null;
+      return latest
+        ? `Recent experience: ${latest.role} at ${latest.company}${latest.year ? ` (${latest.year})` : ''}.`
+        : 'The experience section highlights recent roles and contributions.';
+    }
+
+    if (asksResume) {
+      lastIntent = 'resume';
+      return profile.resume
+        ? `You can view the resume here: ${profile.resume}`
+        : 'The resume button is in the header section.';
+    }
+
+    if (asksContact) {
+      lastIntent = 'contact';
+      return profile.email
+        ? `You can contact ${profile.name || 'the owner'} at ${profile.email}.`
+        : 'Use the Send Email button in the profile header.';
+    }
+
+    if (asksLocation) {
+      lastIntent = 'location';
+      return profile.location
+        ? `${profile.name || 'The profile owner'} is based in ${profile.location}.`
+        : 'Location is listed in the profile header.';
+    }
+
+    return 'I can help with: about, skills, projects, experience, resume, contact, location, and social links.';
+  };
+
+  addMessage("Hello! I'm Nikko AI. Ask me anything about this portfolio.");
+
+  launcher.addEventListener('click', () => {
+    if (widget.classList.contains('open')) {
+      close();
+      return;
+    }
+    open();
+  });
+
+  closeButton.addEventListener('click', close);
+
+  form.addEventListener('submit', (event) => {
+    event.preventDefault();
+    const message = input.value.trim();
+    if (!message) {
+      return;
+    }
+
+    addMessage(message, 'user');
+    input.value = '';
+
+    const reply = getReply(message);
+    window.setTimeout(() => addMessage(reply, 'assistant'), 280);
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      close();
+    }
+  });
+}
 renderProfile();
 renderAbout();
 renderExperience();
@@ -577,6 +867,7 @@ setupBackgroundParallax();
 setupParallax();
 setupScrollProgress();
 setupBackToTop();
+setupChatWidget();
 setupScrollTypewriter();
 setupPageLoad();
 
@@ -590,4 +881,3 @@ document.onkeydown = function(e) {
     if (e.ctrlKey && e.shiftKey && e.keyCode == 74) return false; // Ctrl+Shift+J
     if (e.ctrlKey && e.keyCode == 85) return false; // Ctrl+U
 };
-

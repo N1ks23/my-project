@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Leonisis M. Asis | Portfolio</title>
   <meta name="description" content="Portfolio of Leonisis M. Asis">
+  <link rel="icon" type="image/jpeg" href="{{ asset('assets/3.jpg') }}">
+  <link rel="shortcut icon" href="{{ asset('assets/3.jpg') }}">
+  <link rel="apple-touch-icon" href="{{ asset('assets/3.jpg') }}">
   <script>
     document.documentElement.classList.add('js');
   </script>

@@ -70,7 +70,6 @@ return [
         ['name' => 'Farm Logs App', 'description' => 'Farm logs are records of farm activities and outcomes.', 'url' => '#'],
     ],
     'gallery' => [
-        'assets/image1.jpg',
         'assets/image2.jpg',
         'assets/image3.jpg',
         'assets/image4.jpg',

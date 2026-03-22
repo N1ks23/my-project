@@ -2,7 +2,7 @@
 
 @section('content')
   <section class="profile-head stagger">
-    <img class="avatar" src="{{ asset('assets/image-2.jpg') }}" alt="Portrait of {{ $portfolio['profile']['name'] ?? 'Leonisis M. Asis' }}" onerror="this.onerror=null;this.src='https://placehold.co/600x600/e4e7ec/122033?text=Leonisis';">
+    <img class="avatar" src="{{ asset('assets/3.jpg') }}" alt="Portrait of {{ $portfolio['profile']['name'] ?? 'Leonisis M. Asis' }}" onerror="this.onerror=null;this.src='https://placehold.co/600x600/e4e7ec/122033?text=Leonisis';">
 
     <div class="intro">
       <h1 id="profileName"><span id="profileNameText">{{ $portfolio['profile']['name'] ?? 'Leonisis M. Asis' }}</span> <span class="verified" aria-label="verified">&#10003;</span></h1>
@@ -82,6 +82,39 @@
   <footer class="footer">
     <p>&copy; <span id="year"></span> <span id="footerName">{{ $portfolio['profile']['name'] ?? 'Leonisis M. Asis' }}</span>. All rights reserved.</p>
   </footer>
+
+  <button class="chat-launcher" id="chatLauncher" type="button" aria-controls="chatWidget" aria-expanded="false">
+    <span class="chat-launcher-icon" aria-hidden="true"></span>
+    <span>Chat with Nikko</span>
+  </button>
+
+  <section class="chat-widget" id="chatWidget" aria-hidden="true">
+    <header class="chat-head">
+      <div class="chat-identity">
+        <img
+          class="chat-avatar"
+          src="{{ asset('assets/3.jpg') }}"
+          alt="Nikko avatar"
+          onerror="this.onerror=null;this.src='https://placehold.co/80x80/e4e7ec/122033?text=M';"
+        >
+        <div class="chat-meta">
+          <h3>Chat with Nikko</h3>
+          <p><span class="chat-status-dot" aria-hidden="true"></span> Online</p>
+        </div>
+      </div>
+      <button class="chat-close" id="chatClose" type="button" aria-label="Close chat">&times;</button>
+    </header>
+
+    <div class="chat-messages" id="chatMessages"></div>
+
+    <form class="chat-input" id="chatForm">
+      <label class="sr-only" for="chatMessageInput">Message Nikko</label>
+      <input id="chatMessageInput" type="text" placeholder="Ask Nikko AI..." autocomplete="off">
+      <button type="submit" aria-label="Send message">
+        <span class="chat-send-icon" aria-hidden="true"></span>
+      </button>
+    </form>
+  </section>
 
   <script>
     window.__PORTFOLIO__ = @json($portfolio);
